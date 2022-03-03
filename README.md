@@ -1,6 +1,18 @@
 # RDS-Project-2022-1
 
+## Introduction
+
 Randomized control trail (RCT) investigating the impact on a post's popularity by giving an initial boost with a single upvote / like
+
+## Table of Contents
+- [RDS-Project-2022-1](#rds-project-2022-1)
+  * [Introduction](#introduction)
+  * [Table of Contents](#table-of-contents)
+- [Setup](#setup)
+  * [Installing with Poetry](#installing-with-poetry)
+  * [Installing with pip](#installing-with-pip)
+  * [Setting up with docker](#setting-up-with-docker)
+- [How to run experiment](#how-to-run-experiment)
 
 # Setup
 ## Installing with Poetry
@@ -21,7 +33,22 @@ A `requirements.txt` file is provided for convenience. Activate your preferred v
 pip install -r requirements.txt	
 ```
 
-# How to run experiment
+## Setup with Docker
+Alternatively, you can use [Docker](https://www.docker.com/) to run the project. To do so, first build the Docker image with the following command from the root of this repository:
+```bash
+docker build . -t rct/main:latest
+```
+or simply
+```bash
+make build-image
+```
+
+Then run the Docker image with the following command:
+```bash
+docker run rct/main:latest
+```
+
+# How to run the experiment
 There are two main entry points to the experiment:
 - `python setup.py` - which sets up the database file and creates appropriate tables
 - `python main.py` - which fetches posts, groups them, and stores them in the database

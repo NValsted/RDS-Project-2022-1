@@ -1,7 +1,8 @@
 import os
 import random
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timedelta
+from multiprocessing.pool import ThreadPool
 from typing import Tuple, List
 from uuid import uuid4
 import json
@@ -16,7 +17,7 @@ CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
 USER_AGENT = os.getenv("USER_AGENT")
-RATELIMIT = os.getenv("RATELIMIT", 5)
+RATELIMIT = int(os.getenv("RATELIMIT", 5))
 
 
 class SelectionStrategyEnum(Enum):
@@ -136,6 +137,7 @@ class RedditBot:
                 score=post.score,
                 num_comments=post.num_comments,
                 date=datetime.now(),
+                creation_date=post.created_utc,
             )
             for post in posts
         ]
@@ -149,3 +151,18 @@ class RedditBot:
 
         parsed_posts = [RedditPostTable(**post) for post in prepared_posts]
         db.add(parsed_posts)
+
+    @staticmethod
+    def get_stored_posts(max_age: int = 8):
+        db = DBFactory()()
+        
+        with db.session() as session:
+            return session.query(RedditPostTable).filter(
+                RedditPostTable.creation_date >= (datetime.now() - timedelta(days=max_age))
+            ).all()
+
+    def get_posts(self, ids: List[str], threads: int = 4) -> List[praw.models.Submission]:
+        with ThreadPool(threads) as pool:
+            posts = pool.map(self.reddit.submission, ids)
+
+        return posts
