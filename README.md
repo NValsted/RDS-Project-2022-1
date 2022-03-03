@@ -9,13 +9,16 @@ Randomized control trail (RCT) investigating the impact on a post's popularity b
   * [Introduction](#introduction)
   * [Table of Contents](#table-of-contents)
 - [Setup](#setup)
-  * [Installing with Poetry](#installing-with-poetry)
-  * [Installing with pip](#installing-with-pip)
-  * [Setting up with docker](#setting-up-with-docker)
-- [How to run experiment](#how-to-run-experiment)
+  * [Virtual environment](#virtual-environment)
+    + [Installing with Poetry](#installing-with-poetry)
+    + [Installing with pip](#installing-with-pip)
+    + [Setup with Docker](#setup-with-docker)
+  * [Environment variables](#environment-variables)
+- [How to run the experiment](#how-to-run-the-experiment)
 
 # Setup
-## Installing with Poetry
+## Virtual environment
+### Installing with Poetry
 [Poetry](https://github.com/python-poetry/poetry) is recommended for installating and setting up the project. If poetry is installed, run:
 
 ```bash
@@ -26,14 +29,14 @@ poetry install
 
 Scripts can then be run with `poetry run python ${filename}` or alternatively by entering a poetry shell with `poetry shell`, from which scripts can simply be run with `python ${filename}`. 
 
-## Installing with pip
+### Installing with pip
 A `requirements.txt` file is provided for convenience. Activate your preferred virtual environment and type the following command to install all dependencies:
 
 ```bash
 pip install -r requirements.txt	
 ```
 
-## Setup with Docker
+### Setup with Docker
 Alternatively, you can use [Docker](https://www.docker.com/) to run the project. To do so, first build the Docker image with the following command from the root of this repository:
 ```bash
 docker build . -t rct/main:latest
@@ -46,6 +49,16 @@ make build-image
 Then run the Docker image with the following command:
 ```bash
 docker run rct/main:latest
+```
+
+## Environment variables
+To authenticate the bot and the bot's API, you need to set the following environment variables with their appropriate values:
+```bash
+export CLIENT_ID=
+export CLIENT_SECRET=
+export USERNAME=
+export PASSWORD=
+export USER_AGENT=
 ```
 
 # How to run the experiment
