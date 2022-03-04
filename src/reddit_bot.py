@@ -1,16 +1,18 @@
 import os
 import random
+import traceback
 from enum import Enum
 from datetime import datetime, timedelta
 from multiprocessing.pool import ThreadPool
-from typing import Tuple, List
+from typing import Tuple, List, Optional, Dict
 from uuid import uuid4
 import json
 
 import praw
 
 from src.database import DBFactory
-from src.database_models import RedditPostTable, GroupEnum
+from src.database_models import RedditPostTable, RedditPostLogPointTable, GroupEnum
+from src.utils import get_logger, safe_call
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
@@ -18,6 +20,8 @@ USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
 USER_AGENT = os.getenv("USER_AGENT")
 RATELIMIT = int(os.getenv("RATELIMIT", 5))
+
+logger = get_logger("REDDIT-BOT")
 
 
 class SelectionStrategyEnum(Enum):
@@ -128,19 +132,26 @@ class RedditBot:
         backup: bool = False,
     ) -> None:
 
-        prepared_posts = [
-            dict(
+        prepared_posts = []
+
+        def _prepare_post(post: praw.models.Submission) -> Dict:
+            return dict(
                 id=post.id,
                 group=post.group,
                 subreddit=str(post.subreddit),
                 title=post.title,
-                score=post.score,
-                num_comments=post.num_comments,
-                date=datetime.now(),
                 creation_date=post.created_utc,
             )
-            for post in posts
-        ]
+
+        for post in posts:
+            prepared_post = safe_call(
+                _prepare_post,
+                args=[post],
+                exception=Exception,
+                raise_on_failure=False,
+            )
+            if prepared_post is not None:
+                prepared_posts.append(prepared_post)
 
         if backup:
             today = datetime.today().date().isoformat()
@@ -151,18 +162,66 @@ class RedditBot:
 
         parsed_posts = [RedditPostTable(**post) for post in prepared_posts]
         db.add(parsed_posts)
+        logger.info(f"Added {len(parsed_posts)} posts to the database")
+
+        RedditBot.add_log_points(posts, backup=backup)
 
     @staticmethod
-    def get_stored_posts(max_age: int = 8):
+    def add_log_points(posts: List[praw.models.Submission], backup: bool = False) -> None:
+        prepared_posts = []
+        def _prepare_post(post: praw.models.Submission) -> Dict:
+            return dict(
+                id=post.id,
+                score=post.score,
+                num_comments=post.num_comments,
+                date=datetime.now(),
+            )
+
+        for post in posts:
+            prepared_post = safe_call(
+                _prepare_post,
+                args=[post],
+                exception=Exception,
+                raise_on_failure=False,
+            )
+            if prepared_post is not None:
+                prepared_posts.append(prepared_post)
+
+        if backup:
+            today = datetime.today().date().isoformat()
+            with open(f"backup/REDDITBOT_{today}_{str(uuid4())}.json", "w") as f:
+                json.dump(prepared_posts, f, indent=4, default=str)
+
+        db = DBFactory()()
+
+        parsed_posts = [RedditPostLogPointTable(**post) for post in prepared_posts]
+        db.add(parsed_posts)
+        logger.info(f"Added {len(parsed_posts)} log points to database")
+
+    @staticmethod
+    def get_stored_posts(max_age: int = 8) -> List[RedditPostTable]:
         db = DBFactory()()
         
         with db.session() as session:
-            return session.query(RedditPostTable).filter(
+            posts = session.query(RedditPostTable).filter(
                 RedditPostTable.creation_date >= (datetime.now() - timedelta(days=max_age))
             ).all()
 
+            logger.info(f"Fetched {len(posts)} posts from the database")
+
+            return posts
+
+    def _submission_wrapper(self, *args, **kwargs) -> Optional[praw.models.Submission]:
+        try:
+            return self.reddit.submission(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"{e}\n{traceback.format_exc()}\nargs: {args}\nkwargs: {kwargs}")
+            return None
+
     def get_posts(self, ids: List[str], threads: int = 4) -> List[praw.models.Submission]:
         with ThreadPool(threads) as pool:
-            posts = pool.map(self.reddit.submission, ids)
+            posts = pool.map(self._submission_wrapper, ids)
+
+        posts = [post for post in posts if post is not None]
 
         return posts

@@ -28,8 +28,8 @@ def send_email(
         ]
     ] = None,
 ):
-    logger = get_logger()
-    
+    logger = get_logger("SEND-EMAIL")
+
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
     message["From"] = GMAIL

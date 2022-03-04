@@ -12,16 +12,24 @@ class GroupEnum(str, Enum):
 
 
 class RedditPost(SQLModel):
-    pk: Optional[int] = Field(primary_key=True, default=None, index=True)
-    id: str = Field(index=True)
+    id: str = Field(primary_key=True, index=True)
     group: GroupEnum = Field(sa_column=Column(SAEnum(GroupEnum)))
     subreddit: str = Field()
     title: str = Field()
-    score: int = Field()
-    num_comments: int = Field()
-    date: datetime = Field(description="Date at which stats were collected")
     creation_date: datetime = Field(description="Date at which post was created")
 
 
 class RedditPostTable(RedditPost, table=True):
     __tablename__ = "RedditPost"
+
+
+class RedditPostLogPoint(SQLModel):
+    pk: Optional[int] = Field(primary_key=True, default=None, index=True)
+    id: str = Field(index=True)
+    score: int = Field()
+    num_comments: int = Field()
+    date: datetime = Field(description="Date at which stats were collected")
+
+
+class RedditPostLogPointTable(RedditPostLogPoint, table=True):
+    __tablename__ = "RedditPostLogPoint"

@@ -6,7 +6,7 @@ import plotly.figure_factory as ff
 import plotly.express as px
 
 from src.database import DBFactory
-from src.database_models import RedditPostTable
+from src.database_models import RedditPostTable, RedditPostLogPointTable
 
 
 class TargetAttributeEnum(Enum):
@@ -30,10 +30,13 @@ def get_scatter(data, attribute: TargetAttributeEnum = TargetAttributeEnum.SCORE
 
 
 def generate_figures():
-    df = pd.read_sql_table(RedditPostTable.__tablename__, DBFactory.engine_url)
-    df = df[df["creation_date"] >= (datetime.now() - timedelta(days=8))]
+    posts = pd.read_sql_table(RedditPostTable.__tablename__, DBFactory.engine_url)
+    log_points = pd.read_sql_table(RedditPostLogPointTable.__tablename__, DBFactory.engine_url)
 
-    distplot = get_distplot(df)
-    scatter = get_scatter(df)
-    
+    posts = posts[posts["creation_date"] >= (datetime.now() - timedelta(days=8))]
+    joined = pd.merge(posts, log_points, on="id", how="left")
+
+    distplot = get_distplot(joined)
+    scatter = get_scatter(joined)
+
     return distplot, scatter

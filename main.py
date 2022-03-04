@@ -1,22 +1,16 @@
 from src import RedditBot
-from src.utils import safe_call, get_logger
+from src.utils import safe_call
 
 
 def main():
-    logger = get_logger()
-
     bot = RedditBot()
 
     # Update old Posts
     posts = bot.get_stored_posts()
-    ids = {post.id: post.group for post in posts}
-    logger.info(f"Fetched {len(ids)} ids from the database.")
+    ids = {post.id for post in posts}
 
-    posts = bot.get_posts(ids.keys())
-    for post in posts:
-        post.group = ids[post.id]
-
-    bot.add_posts_to_db(posts)
+    posts = bot.get_posts(ids)
+    bot.add_log_points(posts)
 
     # New posts
     treatment, control = safe_call(
@@ -24,8 +18,6 @@ def main():
     )
     bot.add_posts_to_db(treatment)
     bot.add_posts_to_db(control)
-    
-    logger.info("Successfully added posts to database")
 
 
 if __name__ == "__main__":

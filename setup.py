@@ -1,4 +1,4 @@
-from src.database_models import RedditPostTable
+from src.database_models import RedditPostTable, RedditPostLogPointTable
 from src.database import DBFactory
 
 
