@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, TypeVar, List
+from typing import Optional, TypeVar, List, Type
 from contextlib import contextmanager
 
 from sqlalchemy.engine import Engine
@@ -29,6 +29,14 @@ class Database:
             session.add_all(instances)
             session.commit()
 
+    def get(self, model: Type[ModelType], id: int) -> Optional[ModelType]:
+        with Session(self.engine) as session:
+            matches = session.query(model).filter(model.id == id).all()
+            if len(matches) > 1:
+                raise ValueError(f"Multiple matches for {id=} in {model.__name__}:\n{matches}")
+            elif len(matches) == 0:
+                return None
+            return matches[0]
 
 @dataclass
 class DBFactory:

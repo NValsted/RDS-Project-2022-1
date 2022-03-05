@@ -13,6 +13,13 @@ class GroupEnum(str, Enum):
 
 class RedditPost(SQLModel):
     id: str = Field(primary_key=True, index=True)
+    batch_id: str = Field(
+        index=True,
+        description="Unique ID of the batch in which the post was added",
+    )
+    active: bool = Field(
+        default=True, description="Indicates whether the post is reachable"
+    )
     group: GroupEnum = Field(sa_column=Column(SAEnum(GroupEnum)))
     subreddit: str = Field()
     title: str = Field()

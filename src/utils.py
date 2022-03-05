@@ -1,7 +1,7 @@
-from cmath import log
 from typing import Callable, Any, List, Dict, Optional
 from time import sleep
 import logging
+import traceback
 
 from prawcore import exceptions
 
@@ -26,7 +26,7 @@ def safe_call(
     raise_on_failure: bool = True,
 ) -> Any:
     """
-    Wraps a function and retries it if it raises a NotFound exception (404).
+    Wraps a function and retries it if it raises an exception.
     """
     logger = get_logger()
 
@@ -39,10 +39,14 @@ def safe_call(
         try:
             return func(*args, **kwargs)
         except exception as e:
-            logger.info(e)
-            sleep(sleep_time)
             max_retries -= 1
+            logger.info(
+                f"{func.__name__} failed with args {args} and kwargs {kwargs}\n"
+                f"{e}\n{traceback.format_exc()}"
+                f"{max_retries} retries left"
+            )
+            sleep(sleep_time)
     
     if raise_on_failure:
-        logger.error(f"Failed to execute function {func.__name__}\n{e}")
+        logger.error(f"Failed to execute function {func.__name__}")
         raise e

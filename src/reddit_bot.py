@@ -105,6 +105,8 @@ class RedditBot:
         based on maximizing the mean cosine similarity.
         """
         
+        batch_id = str(uuid4())
+
         if strategy == SelectionStrategyEnum.EMBEDDINGS:
             raise NotImplementedError
         
@@ -120,9 +122,11 @@ class RedditBot:
         for post in treatment_posts:
             post.upvote()
             post.group = GroupEnum.TREATMENT
+            post.batch_id = batch_id
 
         for post in control_posts:
             post.group = GroupEnum.CONTROL
+            post.batch_id = batch_id
 
         return treatment_posts, control_posts
 
@@ -137,6 +141,7 @@ class RedditBot:
         def _prepare_post(post: praw.models.Submission) -> Dict:
             return dict(
                 id=post.id,
+                batch_id=post.batch_id,
                 group=post.group,
                 subreddit=str(post.subreddit),
                 title=post.title,
@@ -168,7 +173,10 @@ class RedditBot:
 
     @staticmethod
     def add_log_points(posts: List[praw.models.Submission], backup: bool = False) -> None:
+
         prepared_posts = []
+        stale_posts = []
+
         def _prepare_post(post: praw.models.Submission) -> Dict:
             return dict(
                 id=post.id,
@@ -186,6 +194,8 @@ class RedditBot:
             )
             if prepared_post is not None:
                 prepared_posts.append(prepared_post)
+            else:
+                stale_posts.append(post)
 
         if backup:
             today = datetime.today().date().isoformat()
@@ -198,6 +208,15 @@ class RedditBot:
         db.add(parsed_posts)
         logger.info(f"Added {len(parsed_posts)} log points to database")
 
+        for post in stale_posts:
+            old_instance = db.get(RedditPostTable, id=post.id)
+            if old_instance is not None:
+                old_instance.active = False
+                db.add([old_instance])
+
+        logger.info(f"Marked {len(stale_posts)} stale posts")
+
+
     @staticmethod
     def get_stored_posts(max_age: int = 8) -> List[RedditPostTable]:
         db = DBFactory()()
@@ -205,9 +224,11 @@ class RedditBot:
         with db.session() as session:
             posts = session.query(RedditPostTable).filter(
                 RedditPostTable.creation_date >= (datetime.now() - timedelta(days=max_age))
+            ).filter(
+                RedditPostTable.active
             ).all()
 
-            logger.info(f"Fetched {len(posts)} posts from the database")
+            logger.info(f"Fetched {len(posts)} active posts from the database")
 
             return posts
 
