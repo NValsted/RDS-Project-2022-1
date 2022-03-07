@@ -1,4 +1,4 @@
-from io import StringIO 
+from io import StringIO
 
 from src.stats import generate_figures
 from src.mail import send_email
@@ -6,7 +6,7 @@ from src.mail import send_email
 
 def send_report():
     distplot, scatter = generate_figures()
-    
+
     logs = StringIO()
     with open("logs.log", "r") as f:
         logs.write(f.read())

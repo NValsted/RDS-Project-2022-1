@@ -17,7 +17,7 @@ class TargetAttributeEnum(Enum):
 def get_distplot(data, attribute: TargetAttributeEnum = TargetAttributeEnum.SCORE):
     hist_data = [
         data[data["group"] == "CONTROL"][attribute.value],
-        data[data["group"] == "TREATMENT"][attribute.value]
+        data[data["group"] == "TREATMENT"][attribute.value],
     ]
     return ff.create_distplot(
         hist_data,
@@ -31,7 +31,9 @@ def get_scatter(data, attribute: TargetAttributeEnum = TargetAttributeEnum.SCORE
 
 def generate_figures():
     posts = pd.read_sql_table(RedditPostTable.__tablename__, DBFactory.engine_url)
-    log_points = pd.read_sql_table(RedditPostLogPointTable.__tablename__, DBFactory.engine_url)
+    log_points = pd.read_sql_table(
+        RedditPostLogPointTable.__tablename__, DBFactory.engine_url
+    )
 
     posts = posts[posts["creation_date"] >= (datetime.now() - timedelta(days=8))]
     joined = pd.merge(posts, log_points, on="id", how="left")

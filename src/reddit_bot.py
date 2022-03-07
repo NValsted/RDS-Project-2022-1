@@ -80,13 +80,13 @@ class RedditBot:
         """
         Selects a batch of posts with at most 'score' number of upvotes and
         'num_comments' number of comments in the given subreddit.
-        
+
         NOTE: batch_size is an upper bound on the number of posts returned.
         """
-        
+
         posts = [
-            post for post in
-            self.reddit.subreddit(subreddit).new(limit=batch_size)
+            post
+            for post in self.reddit.subreddit(subreddit).new(limit=batch_size)
             if post.score <= score and post.num_comments <= num_comments
         ]
 
@@ -104,17 +104,17 @@ class RedditBot:
         If the strategy is EMBEDDINGS, the posts are embedded and paired up
         based on maximizing the mean cosine similarity.
         """
-        
+
         batch_id = str(uuid4())
 
         if strategy == SelectionStrategyEnum.EMBEDDINGS:
             raise NotImplementedError
-        
+
         else:
             random.shuffle(posts)
             if len(posts) % 2 != 0:
-                posts.pop()  # Drop a random post to make the list even 
-            
+                posts.pop()  # Drop a random post to make the list even
+
             middle = len(posts) // 2
             treatment_posts = posts[:middle]
             control_posts = posts[middle:]
@@ -172,7 +172,9 @@ class RedditBot:
         RedditBot.add_log_points(posts, backup=backup)
 
     @staticmethod
-    def add_log_points(posts: List[praw.models.Submission], backup: bool = False) -> None:
+    def add_log_points(
+        posts: List[praw.models.Submission], backup: bool = False
+    ) -> None:
 
         prepared_posts = []
         stale_posts = []
@@ -216,17 +218,20 @@ class RedditBot:
 
         logger.info(f"Marked {len(stale_posts)} stale posts")
 
-
     @staticmethod
     def get_stored_posts(max_age: int = 8) -> List[RedditPostTable]:
         db = DBFactory()()
-        
+
         with db.session() as session:
-            posts = session.query(RedditPostTable).filter(
-                RedditPostTable.creation_date >= (datetime.now() - timedelta(days=max_age))
-            ).filter(
-                RedditPostTable.active
-            ).all()
+            posts = (
+                session.query(RedditPostTable)
+                .filter(
+                    RedditPostTable.creation_date
+                    >= (datetime.now() - timedelta(days=max_age))
+                )
+                .filter(RedditPostTable.active)
+                .all()
+            )
 
             logger.info(f"Fetched {len(posts)} active posts from the database")
 
@@ -236,10 +241,14 @@ class RedditBot:
         try:
             return self.reddit.submission(*args, **kwargs)
         except Exception as e:
-            logger.error(f"{e}\n{traceback.format_exc()}\nargs: {args}\nkwargs: {kwargs}")
+            logger.error(
+                f"{e}\n{traceback.format_exc()}\nargs: {args}\nkwargs: {kwargs}"
+            )
             return None
 
-    def get_posts(self, ids: List[str], threads: int = 4) -> List[praw.models.Submission]:
+    def get_posts(
+        self, ids: List[str], threads: int = 4
+    ) -> List[praw.models.Submission]:
         with ThreadPool(threads) as pool:
             posts = pool.map(self._submission_wrapper, ids)
 

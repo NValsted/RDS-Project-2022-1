@@ -1,4 +1,4 @@
-from src.database_models import RedditPostTable, RedditPostLogPointTable
+from src.database_models import RedditPostTable, RedditPostLogPointTable  # NOQA : F401
 from src.database import DBFactory
 
 

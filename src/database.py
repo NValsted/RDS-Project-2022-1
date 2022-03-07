@@ -33,10 +33,13 @@ class Database:
         with Session(self.engine) as session:
             matches = session.query(model).filter(model.id == id).all()
             if len(matches) > 1:
-                raise ValueError(f"Multiple matches for {id=} in {model.__name__}:\n{matches}")
+                raise ValueError(
+                    f"Multiple matches for {id=} in {model.__name__}:\n{matches}"
+                )
             elif len(matches) == 0:
                 return None
             return matches[0]
+
 
 @dataclass
 class DBFactory:

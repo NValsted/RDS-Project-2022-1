@@ -22,11 +22,7 @@ context = ssl.create_default_context()
 def send_email(
     receivers: List[str] = MAIL_RECEIVERS,
     subject: str = f"Bot report {datetime.now()}",
-    attachments: Optional[
-        List[
-            Tuple[str, Union[BytesIO, StringIO]]
-        ]
-    ] = None,
+    attachments: Optional[List[Tuple[str, Union[BytesIO, StringIO]]]] = None,
 ):
     logger = get_logger("SEND-EMAIL")
 
