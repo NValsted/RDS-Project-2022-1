@@ -132,3 +132,6 @@ dmypy.json
 logs.log
 backup/
 database.db
+
+# VS Code config
+.vscode/

@@ -1,4 +1,5 @@
 backup_dir := backup
+logs_path := logs.log
 docker_image := rct/main:latest
 
 build-image:
@@ -13,6 +14,7 @@ run-image-interactive:
 
 setup:
 	mkdir -p ${backup_dir}
+	touch ${logs_path}
 	poetry install
 	poetry run python setup.py
 

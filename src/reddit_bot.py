@@ -1,7 +1,6 @@
 import os
 import random
 import traceback
-from enum import Enum
 from datetime import datetime, timedelta
 from multiprocessing.pool import ThreadPool
 from typing import Tuple, List, Optional, Dict
@@ -24,19 +23,17 @@ RATELIMIT = int(os.getenv("RATELIMIT", 5))
 logger = get_logger("REDDIT-BOT")
 
 
-class SelectionStrategyEnum(Enum):
-    RANDOM = "RANDOM"
-    EMBEDDINGS = "EMBEDDINGS"
-
-
 class RedditBot:
     """
     Wrapper for the Reddit bot.
 
-    It contains the following functions:
+    It contains the following methods:
     - get_batch_of_posts: Selects a batch of posts for the experiment
     - group_posts: Groups a list of posts into treatment and control groups
     - add_posts_to_db: Adds a list of posts to the database
+    - add_log_points: Adds a list of log points to the database
+    - get_stored_posts: Fetches posts from the database given a date filter
+    - get_posts: Fetches posts from the Reddit API given a list of ids
     """
 
     reddit: praw.Reddit
@@ -95,29 +92,19 @@ class RedditBot:
     @staticmethod
     def group_posts(
         posts: List[praw.models.Submission],
-        strategy: SelectionStrategyEnum = SelectionStrategyEnum.RANDOM,
     ) -> Tuple[List[praw.models.Submission], List[praw.models.Submission]]:
         """
         Assigns posts into treatment and control groups.
-
-        If the strategy is RANDOM, the posts are grouped randomly.
-        If the strategy is EMBEDDINGS, the posts are embedded and paired up
-        based on maximizing the mean cosine similarity.
         """
 
         batch_id = str(uuid4())
+        random.shuffle(posts)
+        if len(posts) % 2 != 0:
+            posts.pop()  # Drop a random post to make the list even
 
-        if strategy == SelectionStrategyEnum.EMBEDDINGS:
-            raise NotImplementedError
-
-        else:
-            random.shuffle(posts)
-            if len(posts) % 2 != 0:
-                posts.pop()  # Drop a random post to make the list even
-
-            middle = len(posts) // 2
-            treatment_posts = posts[:middle]
-            control_posts = posts[middle:]
+        middle = len(posts) // 2
+        treatment_posts = posts[:middle]
+        control_posts = posts[middle:]
 
         for post in treatment_posts:
             post.upvote()
