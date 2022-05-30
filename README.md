@@ -65,5 +65,3 @@ export USER_AGENT=
 There are two main entry points to the experiment:
 - `python setup.py` - which sets up the database file and creates appropriate tables
 - `python main.py` - which fetches posts, groups them, and stores them in the database
-
-Furthermore, a jupyter notebook is provided, which contains these entry points - `RoDS-Reddit-bot.ipynb`
